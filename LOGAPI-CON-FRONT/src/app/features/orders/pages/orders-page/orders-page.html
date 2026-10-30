@@ -1,0 +1,614 @@
+<div class="orders-shell">
+  <header class="orders-header">
+    <div>
+      <a class="back-link"
+         routerLink="/dashboard">
+        ← Regresar al dashboard
+      </a>
+
+      <p class="eyebrow">OPERACIÓN LOGÍSTICA</p>
+      <h1>Pedidos</h1>
+      <p class="description">
+        Consulta y registra pedidos autorizados.
+      </p>
+    </div>
+
+    <button type="button"
+            class="refresh-button"
+            (click)="loadOrders()"
+            [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <section class="create-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">NUEVO REGISTRO</p>
+        <h2>Crear pedido</h2>
+      </div>
+    </div>
+
+    <form class="create-form"
+          #createForm="ngForm"
+          (ngSubmit)="createOrder()">
+      <label>
+        Cliente
+        <input type="text"
+               name="customer"
+               [(ngModel)]="customer"
+               required
+               maxlength="100"
+               placeholder="Nombre del cliente">
+      </label>
+
+      <label>
+        Peso en [Kg]
+        <input type="number"
+               name="weight"
+               [(ngModel)]="weight"
+               required
+               min="0.01"
+               step="0.01"
+               placeholder="0.00">
+      </label>
+
+      <label>
+        Sector
+        <input type="text"
+               name="sector"
+               [(ngModel)]="sector"
+               required
+               maxlength="100"
+               placeholder="Norte, Sur, Centro...">
+      </label>
+
+      <label>
+        Fecha programada
+        <input type="date"
+               name="scheduledDate"
+               [(ngModel)]="scheduledDate">
+      </label>
+
+      <label class="full-width">
+        Dirección de entrega
+        <input type="text"
+               name="deliveryAddress"
+               [(ngModel)]="deliveryAddress"
+               required
+               maxlength="300"
+               placeholder="Dirección completa">
+      </label>
+
+      <div class="form-actions full-width">
+        <button type="submit"
+                class="primary-button"
+                [disabled]="isCreating || createForm.invalid">
+          {{
+            isCreating
+              ? 'Guardando...'
+              : 'Crear pedido'
+          }}
+        </button>
+      </div>
+    </form>
+
+
+    @if (evidenceOrder) {
+    <section class="evidence-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">EVIDENCIA DE ENTREGA</p>
+          <h2>
+            Pedido #{{ evidenceOrder.id }}
+            · {{ evidenceOrder.customer }}
+          </h2>
+        </div>
+
+        <button type="button"
+                class="secondary-button"
+                (click)="closeEvidence()"
+                [disabled]="isUploadingEvidence">
+          Cerrar
+        </button>
+      </div>
+
+      <form class="evidence-form"
+            (ngSubmit)="uploadEvidence()">
+        <label>
+          Fotografía
+          <input type="file"
+                 accept="image/jpeg,image/png,image/webp"
+                 (change)="onEvidenceFileSelected($event)"
+                 required>
+        </label>
+
+        <label>
+          Comentarios
+          <textarea name="evidenceComments"
+                    [(ngModel)]="evidenceComments"
+                    maxlength="1000"
+                    rows="3"
+                    placeholder="Observaciones de la entrega"></textarea>
+        </label>
+
+        <button type="submit"
+                class="primary-button"
+                [disabled]="
+        isUploadingEvidence ||
+        !evidenceFile
+      ">
+          {{
+        isUploadingEvidence
+          ? 'Cargando...'
+          : 'Cargar evidencia'
+          }}
+        </button>
+      </form>
+
+      @if (isLoadingEvidence) {
+      <p class="message">
+        Cargando evidencias...
+      </p>
+      }
+
+      @if (!isLoadingEvidence && evidenceItems.length === 0) {
+      <p class="message">
+        Este pedido todavía no tiene evidencias.
+      </p>
+      }
+
+      @if (evidenceItems.length > 0) {
+      <div class="evidence-list">
+        @for (item of evidenceItems; track item.id) {
+        <article class="evidence-item">
+          <div>
+            <strong>
+              {{ item.originalFileName }}
+            </strong>
+
+            <small>
+              {{ item.uploadedAtUtc | date: 'dd/MM/yyyy HH:mm' }}
+            </small>
+
+            @if (item.comments) {
+            <p>{{ item.comments }}</p>
+            }
+          </div>
+
+          <button type="button"
+                  class="secondary-button"
+                  (click)="downloadEvidence(item)">
+            Descargar
+          </button>
+        </article>
+        }
+      </div>
+      }
+    </section>
+    }
+
+    @if (createErrorMessage) {
+    <p class="form-message error-message"
+       role="alert">
+      {{ createErrorMessage }}
+    </p>
+    }
+
+    @if (successMessage) {
+    <p class="form-message success-message">
+      {{ successMessage }}
+    </p>
+    }
+  </section>
+
+  <section class="filters-card">
+    <label>
+      Buscar
+      <input type="search"
+             name="searchTerm"
+             [(ngModel)]="searchTerm"
+             (ngModelChange)="applyFilters()"
+             placeholder="Folio, cliente, sector o dirección">
+    </label>
+
+    <label>
+      Estado
+      <select name="selectedStatus"
+              [(ngModel)]="selectedStatus"
+              (ngModelChange)="applyFilters()">
+        <option value="">Todos los estados</option>
+
+        @for (
+        status of [
+        1, 2, 3, 4, 5, 6, 7, 8,
+        9, 10, 11, 12, 13, 14, 15,
+        16, 17, 18, 19, 20, 21, 22,
+        23, 24
+        ];
+        track status
+        ) {
+        <option [value]="status">
+          {{ getStatusLabel(status) }}
+        </option>
+        }
+      </select>
+    </label>
+  </section>
+
+
+  @if (partialOrder) {
+  <section class="partial-delivery-card">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">ENTREGA PARCIAL</p>
+        <h2>
+          Pedido #{{ partialOrder.id }}
+          · {{ partialOrder.customer }}
+        </h2>
+      </div>
+
+      <button type="button"
+              class="secondary-button"
+              (click)="cancelPartialDelivery()"
+              [disabled]="isSavingPartial">
+        Cancelar
+      </button>
+    </div>
+
+    <p class="partial-summary">
+      Peso total del pedido:
+      <strong>
+        {{ partialOrder.weight | number: '1.2-2' }}
+      </strong>
+    </p>
+
+    <form class="partial-form"
+          #partialForm="ngForm"
+          (ngSubmit)="savePartialDelivery()">
+      <label>
+        Peso entregado
+        <input type="number"
+               name="partialDeliveredWeight"
+               [(ngModel)]="partialDeliveredWeight"
+               required
+               min="0.01"
+               [max]="partialOrder.weight - 0.01"
+               step="0.01"
+               placeholder="Cantidad entregada">
+      </label>
+
+      <label>
+        Nueva fecha de entrega
+        <input type="date"
+               name="partialRescheduledDate"
+               [(ngModel)]="partialRescheduledDate"
+               required>
+      </label>
+
+      <label class="full-width">
+        Motivo
+        <input type="text"
+               name="partialReason"
+               [(ngModel)]="partialReason"
+               required
+               minlength="3"
+               maxlength="500"
+               placeholder="Motivo de la entrega parcial">
+      </label>
+
+      <label class="full-width">
+        Comentarios
+        <textarea name="partialComments"
+                  [(ngModel)]="partialComments"
+                  maxlength="1000"
+                  rows="3"
+                  placeholder="Observaciones del conductor"></textarea>
+      </label>
+
+      <div class="form-actions full-width">
+        <button type="submit"
+                class="primary-button"
+                [disabled]="
+          isSavingPartial ||
+          partialForm.invalid
+        ">
+          {{
+          isSavingPartial
+            ? 'Registrando...'
+            : 'Registrar entrega parcial'
+          }}
+        </button>
+      </div>
+    </form>
+  </section>
+  }
+
+
+  @if (errorMessage) {
+  <section class="message error-message"
+           role="alert">
+    {{ errorMessage }}
+  </section>
+  }
+
+  @if (isLoading) {
+  <section class="message">
+    Cargando pedidos...
+  </section>
+  } @else if (!errorMessage && filteredOrders.length === 0) {
+  <section class="message">
+    No hay pedidos que coincidan con los filtros.
+  </section>
+  } @else if (!errorMessage) {
+  <section class="orders-table-card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Folio Mas Admin</th>
+            <th>Cliente</th>
+            <th>Sector</th>
+            <th>Peso</th>
+            <th>Fecha programada</th>
+            <th>Estado</th>
+            <th>Dirección</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (
+          order of filteredOrders;
+          track trackByOrderId($index, order)
+          ) {
+          <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.externalFolio?? 'Manual' }}</td>
+            <td>{{ order.customer }}</td>
+            <td>{{ order.sector }}</td>
+            <td>
+              {{ order.weight | number: '1.2-2' }}
+            </td>
+            <td>
+              {{
+                    order.scheduledDate
+                      ? (order.scheduledDate
+                        | date: 'dd/MM/yyyy')
+                      : 'Sin programar'
+              }}
+            </td>
+            <td>
+              <span class="status-badge">
+                {{ getStatusLabel(order.status) }}
+              </span>
+            </td>
+            <td>{{ order.deliveryAddress }}</td>
+            <td class="actions-cell">
+
+              @if (order.status === 1) {
+              <button type="button"
+                      class="action-button"
+                      (click)="validateOrder(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+        updatingOrderId === order.id
+          ? 'Validando...'
+          : 'Validar'
+                }}
+              </button>
+              }
+
+              @if (order.status === 14) {
+              <button type="button"
+                      class="action-button inventory-button"
+                      (click)="advanceToInventory(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Enviar a inventario
+              </button>
+              }
+
+              @if (order.status === 15) {
+              <button type="button"
+                      class="action-button inventory-button"
+                      (click)="validateInventory(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Validar inventario
+              </button>
+              }
+
+              @if (order.status === 16) {
+              <button type="button"
+                      class="action-button logistics-button"
+                      (click)="advanceToLogistics(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Enviar a logística
+              </button>
+              }
+
+              @if (order.status === 17) {
+              <button type="button"
+                      class="action-button logistics-button"
+                      (click)="validateLogistics(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Validar logística
+              </button>
+              }
+
+              @if (order.status === 18) {
+              <button type="button"
+                      class="action-button routing-button"
+                      (click)="advanceToRouting(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Enviar a ruteo
+              </button>
+              }
+
+              @if (order.status === 20) {
+              <button type="button"
+                      class="action-button load-button"
+                      (click)="markReadyToLoad(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+      updatingOrderId === order.id
+        ? 'Actualizando...'
+        : 'Listo para cargar'
+                }}
+              </button>
+              }
+
+              @if (order.status === 6) {
+              <button type="button"
+                      class="action-button load-button"
+                      (click)="markLoaded(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+      updatingOrderId === order.id
+        ? 'Cargando...'
+        : 'Marcar cargado'
+                }}
+              </button>
+              }
+
+              @if (order.status === 7) {
+              <button type="button"
+                      class="action-button supervisor-button"
+                      (click)="validateBySupervisor(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+      updatingOrderId === order.id
+        ? 'Validando...'
+        : 'Validar carga'
+                }}
+              </button>
+              }
+
+              @if (order.status === 21) {
+              <button type="button"
+                      class="action-button route-start-button"
+                      (click)="startRoute(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+      updatingOrderId === order.id
+        ? 'Autorizando...'
+        : 'Iniciar ruta'
+                }}
+              </button>
+              }
+
+
+
+              @if (order.status === 8) {
+              <button type="button"
+                      class="action-button route-start-button"
+                      (click)="confirmClientDelivery(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+    updatingOrderId === order.id
+      ? 'Confirmando...'
+      : 'Entrega completa'
+                }}
+              </button>
+
+              <button type="button"
+                      class="action-button partial-button"
+                      (click)="openPartialDelivery(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Entrega parcial
+              </button>
+              <button type="button"
+                      class="action-button evidence-button"
+                      (click)="openEvidence(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Evidencia
+              </button>
+
+              }
+
+
+              @if (order.status === 23) {
+              <button type="button"
+                      class="action-button delivered-button"
+                      (click)="markDelivered(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+      updatingOrderId === order.id
+        ? 'Registrando...'
+        : 'Marcar entregado'
+                }}
+              </button>
+              <button type="button"
+                      class="action-button evidence-button"
+                      (click)="openEvidence(order)">
+                Evidencia
+              </button>
+              }
+
+              @if (order.status === 9) {
+              <button type="button"
+                      class="action-button finish-button"
+                      (click)="finishOrder(order)"
+                      [disabled]="updatingOrderId === order.id">
+                Finalizar pedido
+              </button>
+              }
+
+              @if (order.status === 22) {
+              <button type="button"
+                      class="action-button partial-button"
+                      (click)="reschedulePartial(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+    updatingOrderId === order.id
+      ? 'Reagendando...'
+      : 'Reagendar saldo'
+                }}
+              </button>
+              }
+
+              @if (order.status === 10) {
+              <button type="button"
+                      class="action-button routing-button"
+                      (click)="sendRescheduledToRouting(order)"
+                      [disabled]="updatingOrderId === order.id">
+                {{
+    updatingOrderId === order.id
+      ? 'Enviando...'
+      : 'Enviar a ruteo'
+                }}
+              </button>
+              }
+
+
+              @if (
+              order.status !== 1 &&
+              order.status !== 6 &&
+              order.status !== 7 &&
+              order.status !== 8 &&
+              order.status !== 9 &&
+              order.status !== 10 &&
+              order.status !== 14 &&
+              order.status !== 15 &&
+              order.status !== 16 &&
+              order.status !== 17 &&
+              order.status !== 18 &&
+              order.status !== 20 &&
+              order.status !== 21 &&
+              order.status !== 22 &&
+              order.status !== 23 &&
+              order.status !== 24
+              ) {
+              <span class="no-action">
+                Sin acción
+              </span>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  }
+</div>

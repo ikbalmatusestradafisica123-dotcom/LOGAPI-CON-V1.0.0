@@ -1,0 +1,160 @@
+<div class="users-page">
+  <a class="back-link"
+     routerLink="/dashboard">
+    ← Regresar al dashboard
+  </a>
+
+  <p class="eyebrow">ADMINISTRACIÓN</p>
+  <h1>Usuarios y roles</h1>
+
+  <section class="user-form-card">
+    <h2>Crear usuario</h2>
+
+    <form class="user-form"
+          #userForm="ngForm"
+          (ngSubmit)="createUser()">
+      <label>
+        Usuario
+        <input type="text"
+               name="username"
+               [(ngModel)]="username"
+               minlength="3"
+               maxlength="50"
+               required
+               placeholder="Ej. logistica01">
+      </label>
+
+      <label>
+        Contraseña temporal
+        <input type="password"
+               name="password"
+               [(ngModel)]="password"
+               minlength="12"
+               maxlength="128"
+               required
+               placeholder="Mínimo 12 caracteres">
+      </label>
+
+      <label>
+        Rol
+        <select name="role"
+                [(ngModel)]="role"
+                required>
+          @for (availableRole of roles; track availableRole) {
+          <option [value]="availableRole">
+            {{ availableRole }}
+          </option>
+          }
+        </select>
+      </label>
+
+      <button type="submit"
+              [disabled]="isCreating || userForm.invalid">
+        {{ isCreating ? 'Creando...' : 'Crear usuario' }}
+      </button>
+    </form>
+
+    @if (errorMessage) {
+    <p class="error-message" role="alert">
+      {{ errorMessage }}
+    </p>
+    }
+
+    @if (successMessage) {
+    <p class="success-message">
+      {{ successMessage }}
+    </p>
+    }
+  </section>
+
+  <section class="users-table-card">
+    <div class="table-heading">
+      <h2>Usuarios registrados</h2>
+
+      <button type="button"
+              (click)="loadUsers()"
+              [disabled]="isLoading">
+        {{ isLoading ? 'Cargando...' : 'Actualizar' }}
+      </button>
+    </div>
+
+    @if (isLoading) {
+    <p class="empty-message">
+      Cargando usuarios...
+    </p>
+    } @else if (users.length === 0) {
+    <p class="empty-message">
+      No hay usuarios registrados.
+    </p>
+    } @else {
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (user of users; track user.id) {
+          <tr>
+            <td>{{ user.username }}</td>
+
+            <td>
+              <select [value]="user.role"
+                      (change)="changeRole(
+                      user,
+                      $any($event.target).value
+                    )">
+                <option [value]="user.role">
+                  {{ user.role }}
+                </option>
+
+                @for (
+                availableRole of roles;
+                track availableRole
+                ) {
+                @if (availableRole !== user.role) {
+                <option [value]="availableRole">
+                  {{ availableRole }}
+                </option>
+                }
+                }
+              </select>
+            </td>
+
+            <td>
+              <span class="status"
+                    [class.active]="user.isActive"
+                    [class.inactive]="!user.isActive">
+                {{ user.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+
+            <td>
+              {{ user.createdAtUtc | date: 'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <td>
+              <button type="button"
+                      class="secondary-button"
+                      (click)="toggleStatus(user)">
+                {{
+                      user.isActive
+                        ? 'Desactivar'
+                        : 'Activar'
+                }}
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</div>

@@ -1,0 +1,193 @@
+<div class="loads-page">
+  <a class="back-link"
+     routerLink="/dashboard">
+    ← Regresar al dashboard
+  </a>
+
+  <p class="eyebrow">OPERACIÓN LOGÍSTICA</p>
+  <h1>Asignación de cargas</h1>
+
+  @if (errorMessage) {
+  <p class="error-message" role="alert">
+    {{ errorMessage }}
+  </p>
+  }
+
+  @if (successMessage) {
+  <p class="success-message">
+    {{ successMessage }}
+  </p>
+  }
+
+  @if (isLoading) {
+  <section class="message">
+    Cargando pedidos y vehículos...
+  </section>
+  } @else {
+  <section class="assignment-layout">
+    <div class="orders-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">PEDIDOS DISPONIBLES</p>
+          <h2>Selecciona pedidos</h2>
+        </div>
+
+        <span>
+          {{ pendingOrders.length }} disponibles
+        </span>
+      </div>
+
+      @if (pendingOrders.length === 0) {
+      <p class="message">
+        No hay pedidos pendientes de asignación.
+      </p>
+      } @else {
+      <div class="order-list">
+        @for (
+        order of pendingOrders;
+        track order.id
+        ) {
+        <label class="order-option"
+               [class.selected]="isSelected(order)">
+          <input type="checkbox"
+                 [checked]="isSelected(order)"
+                 (change)="toggleOrder(order)">
+
+          <span>
+            <strong>
+              #{{ order.id }} · {{ order.customer }}
+            </strong>
+
+            <small>
+              {{ order.sector }} ·
+              {{ order.weight | number: '1.2-2' }}
+            </small>
+          </span>
+        </label>
+        }
+      </div>
+      }
+    </div>
+
+    <div class="load-panel">
+      <p class="eyebrow">NUEVA CARGA</p>
+      <h2>Asignación manual</h2>
+
+      <label>
+        Fecha de ruta
+        <input type="date"
+               name="routeDate"
+               [(ngModel)]="routeDate">
+      </label>
+
+      <label>
+        Vehículo
+        <select name="selectedVehicleId"
+                [(ngModel)]="selectedVehicleId">
+          <option [ngValue]="null">
+            Selecciona un vehículo
+          </option>
+
+          @for (
+          vehicle of availableVehicles;
+          track vehicle.id
+          ) {
+          <option [ngValue]="vehicle.id">
+            {{ vehicle.name }} ·
+            {{ vehicle.capacity }} kg
+          </option>
+          }
+        </select>
+      </label>
+
+      <div class="load-summary">
+        <span>Pedidos seleccionados</span>
+        <strong>{{ selectedOrders.length }}</strong>
+
+        <span>Peso total</span>
+        <strong>
+          {{ selectedWeight | number: '1.2-2' }} kg
+        </strong>
+
+        @if (selectedVehicle) {
+        <span>Capacidad disponible</span>
+        <strong>
+          {{
+                selectedVehicle.capacity - selectedWeight
+                  | number: '1.2-2'
+          }}
+          kg
+        </strong>
+        }
+      </div>
+
+      <button type="button"
+              class="primary-button"
+              (click)="saveLoad()"
+              [disabled]="isSaving">
+        {{ isSaving ? 'Guardando...' : 'Guardar carga' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="selected-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">ORDEN MANUAL</p>
+        <h2>Secuencia de entrega</h2>
+      </div>
+
+      <span>
+        Usa las flechas para ordenar las paradas.
+      </span>
+    </div>
+
+    @if (selectedOrders.length === 0) {
+    <p class="message">
+      Selecciona pedidos para definir el orden.
+    </p>
+    } @else {
+    <ol class="selected-list">
+      @for (
+      order of selectedOrders;
+      track order.id;
+      let index = $index
+      ) {
+      <li>
+        <span class="sequence">{{ index + 1 }}</span>
+
+        <span class="selected-order-info">
+          <strong>
+            #{{ order.id }} · {{ order.customer }}
+          </strong>
+          <small>{{ order.deliveryAddress }}</small>
+        </span>
+
+        <button type="button"
+                (click)="moveUp(index)"
+                [disabled]="index === 0"
+                aria-label="Mover arriba">
+          ↑
+        </button>
+
+        <button type="button"
+                (click)="moveDown(index)"
+                [disabled]="
+                  index === selectedOrders.length - 1
+                "
+                aria-label="Mover abajo">
+          ↓
+        </button>
+
+        <button type="button"
+                class="remove-button"
+                (click)="removeOrder(index)">
+          Quitar
+        </button>
+      </li>
+      }
+    </ol>
+    }
+  </section>
+  }
+</div>

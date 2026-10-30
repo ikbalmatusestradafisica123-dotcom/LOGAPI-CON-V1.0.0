@@ -1,0 +1,149 @@
+<div class="vehicles-page">
+  <a class="back-link"
+     routerLink="/dashboard">
+    ← Regresar al dashboard
+  </a>
+
+  <p class="eyebrow">FLOTA</p>
+  <h1>Vehículos</h1>
+
+  <section class="vehicle-form-card">
+    <h2>Registrar vehículo</h2>
+
+    <form class="vehicle-form"
+          #vehicleForm="ngForm"
+          (ngSubmit)="createVehicle()">
+      <label>
+        Nombre
+        <input type="text"
+               name="name"
+               [(ngModel)]="name"
+               required
+               minlength="3"
+               placeholder="Camión 01">
+      </label>
+
+      <label>
+        Capacidad en [Kg]
+        <input type="number"
+               name="capacity"
+               [(ngModel)]="capacity"
+               required
+               min="0.01"
+               step="0.01"
+               placeholder="10">
+      </label>
+
+      <label>
+        Marca
+        <input type="text"
+               name="brand"
+               [(ngModel)]="brand"
+               required
+               placeholder="Volvo">
+      </label>
+
+      <label>
+        Modelo
+        <input type="text"
+               name="model"
+               [(ngModel)]="model"
+               required
+               placeholder="FH">
+      </label>
+
+      <label>
+        Placas
+        <input type="text"
+               name="licensePlate"
+               [(ngModel)]="licensePlate"
+               required
+               placeholder="ABC-123">
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox"
+               name="isAvailable"
+               [(ngModel)]="isAvailable">
+        Disponible
+      </label>
+
+      <button type="submit"
+              [disabled]="isCreating || vehicleForm.invalid">
+        {{ isCreating ? 'Guardando...' : 'Registrar vehículo' }}
+      </button>
+    </form>
+
+    @if (errorMessage) {
+    <p class="error-message" role="alert">
+      {{ errorMessage }}
+    </p>
+    }
+
+    @if (successMessage) {
+    <p class="success-message">
+      {{ successMessage }}
+    </p>
+    }
+  </section>
+
+  <section class="vehicle-table-card">
+    <div class="table-heading">
+      <h2>Flota registrada</h2>
+
+      <button type="button"
+              (click)="loadVehicles()"
+              [disabled]="isLoading">
+        {{ isLoading ? 'Cargando...' : 'Actualizar' }}
+      </button>
+    </div>
+
+    @if (isLoading) {
+    <p class="empty-message">Cargando vehículos...</p>
+    } @else if (vehicles.length === 0) {
+    <p class="empty-message">
+      No hay vehículos registrados.
+    </p>
+    } @else {
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Placas</th>
+            <th>Capacidad</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (vehicle of vehicles; track vehicle.id) {
+          <tr>
+            <td>{{ vehicle.name }}</td>
+            <td>{{ vehicle.brand }}</td>
+            <td>{{ vehicle.model }}</td>
+            <td>{{ vehicle.licensePlate }}</td>
+            <td>
+              {{ vehicle.capacity | number: '1.2-2' }}
+            </td>
+            <td>
+              <span class="vehicle-status"
+                    [class.available]="vehicle.isAvailable"
+                    [class.unavailable]="!vehicle.isAvailable">
+                {{
+                      vehicle.isAvailable
+                        ? 'Disponible'
+                        : 'No disponible'
+                }}
+              </span>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</div>

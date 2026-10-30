@@ -1,0 +1,168 @@
+<div class="tracking-page">
+  <header class="tracking-header-page">
+    <div>
+      <a class="back-link" routerLink="/dashboard">
+        ← Regresar al dashboard
+      </a>
+
+      <p class="eyebrow">SEGUIMIENTO OPERATIVO</p>
+      <h1>Seguimiento de entregas</h1>
+      <p class="description">
+        Consulta el avance real de los pedidos que ya iniciaron
+        su proceso de carga o entrega. Haz clic en cualquier tarjeta para ver sus detalles completos.
+      </p>
+    </div>
+
+    <button type="button"
+            class="refresh-button"
+            (click)="loadTracking()"
+            [disabled]="isLoading">
+      {{ isLoading ? 'Actualizando...' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <section class="tracking-summary">
+    <div class="summary-item">
+      <span class="summary-label">Pedidos operativos</span>
+      <strong>{{ trackedOrders.length }}</strong>
+    </div>
+
+    <div class="summary-item">
+      <span class="summary-label">En ruta</span>
+      <strong>
+        {{
+          trackedOrders.filter((order) => order.status === 8).length
+        }}
+      </strong>
+    </div>
+
+    <div class="summary-item">
+      <span class="summary-label">Última actualización</span>
+      <strong>
+        {{
+          lastUpdated ? (lastUpdated | date: 'HH:mm:ss') : 'Pendiente'
+        }}
+      </strong>
+    </div>
+  </section>
+
+  @if (errorMessage) {
+  <section class="message error-message" role="alert">
+    {{ errorMessage }}
+  </section>
+  }
+
+  @if (isLoading) {
+  <section class="message">
+    Cargando seguimiento...
+  </section>
+  } @else if (!errorMessage && trackedOrders.length === 0) {
+  <section class="message">
+    No hay pedidos en proceso de carga o entrega.
+  </section>
+  } @else if (!errorMessage) {
+  <section class="orders-grid">
+    @for (order of trackedOrders; track trackByOrderId($index, order)) {
+    <article class="tracking-card"
+             [class.in-transit]="order.status === 8"
+             [class.expanded]="isExpanded(order.id)"
+             (click)="toggleCard(order.id)">
+
+      <!-- VISTA MINIATURA (Dashboard compacto) -->
+      <div class="mini-preview">
+        <div class="mini-top">
+          <div>
+            <p class="order-label">PEDIDO #{{ order.id }}</p>
+            <h2>{{ order.customer }}</h2>
+          </div>
+
+          <span class="status-badge">
+            {{ getStatusLabel(order.status) }}
+          </span>
+        </div>
+
+        <div class="mini-progress">
+          <div class="mini-progress-info">
+            <span>{{ getProgressLabel(order.status) }}</span>
+            <strong>{{ getProgress(order.status) }}%</strong>
+          </div>
+
+          <div class="progress-track">
+            <span class="progress-value"
+                  [style.width.%]="getProgress(order.status)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA EXPANDIDA (Se muestra al hacer clic en la tarjeta) -->
+      <div class="expanded-content">
+        <div class="order-details">
+          <div>
+            <span>Sector</span>
+            <strong>{{ order.sector }}</strong>
+          </div>
+
+          <div>
+            <span>Dirección</span>
+            <strong>{{ order.deliveryAddress }}</strong>
+          </div>
+
+          <div>
+            <span>Peso</span>
+            <strong>{{ order.weight | number: '1.2-2' }} kg</strong>
+          </div>
+
+          @if (getLoadForOrder(order.id); as load) {
+          <div>
+            <span>Carga</span>
+            <strong>
+              #{{ load.id }} · {{ load.totalWeight | number: '1.2-2' }} kg
+            </strong>
+          </div>
+          }
+
+          <div>
+            <span>Vehículo</span>
+            @if (getVehicleForOrder(order.id); as vehicle) {
+            <strong>
+              {{ vehicle.name }} · {{ vehicle.licensePlate }}
+            </strong>
+            } @else {
+            <strong>Pendiente de asignación</strong>
+            }
+          </div>
+        </div>
+
+        @if (order.status === 8) {
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          Seguimiento GPS pendiente de conexión
+        </div>
+        }
+      </div>
+
+    </article>
+    }
+  </section>
+  }
+
+  <section class="map-container-section">
+    <div>
+      <p class="eyebrow">MAPA OPERATIVO</p>
+      <h2>Mapa de seguimiento</h2>
+      <p>
+        El mapa está preparado para mostrar rutas y posiciones
+        cuando existan coordenadas GPS.
+      </p>
+    </div>
+
+    @if (mapError) {
+    <p class="error-message">
+      {{ mapError }}
+    </p>
+    }
+
+    <div #mapContainer
+         class="google-map"></div>
+  </section>
+</div>

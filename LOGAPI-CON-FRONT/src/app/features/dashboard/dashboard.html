@@ -1,0 +1,87 @@
+<div class="dashboard-shell">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">LOGIPAC · CONSTRUPAC</p>
+      <h1>Panel de logística</h1>
+    </div>
+
+    <div class="user-area">
+      <div class="user-info">
+        <strong>{{ session?.username }}</strong>
+        <span>{{ session?.role }}</span>
+      </div>
+
+      <button type="button"
+              class="logout-button"
+              (click)="logout()">
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard-content">
+    <section class="welcome-card">
+      <p class="eyebrow">Sesión activa</p>
+      <h2>Bienvenido, {{ session?.username }}</h2>
+      <p>
+        Desde este panel podrás consultar y operar el flujo
+        logístico de los pedidos autorizados.
+      </p>
+    </section>
+
+    <section class="module-grid">
+      <a class="module-card"
+         routerLink="/orders">
+        <span class="module-icon">01</span>
+        <h2>Pedidos</h2>
+        <p>
+          Consulta pedidos, estados, sectores e historial.
+        </p>
+      </a>
+
+      <a class="module-card"
+         routerLink="/vehicles">
+        <span class="module-icon">02</span>
+        <h2>Vehículos</h2>
+        <p>
+          Flota, capacidad y disponibilidad.
+        </p>
+      </a>
+
+      <a class="module-card"
+         routerLink="/routes">
+        <span class="module-icon">03</span>
+        <h2>Rutas</h2>
+        <p>
+          Planificación por tonelaje y capacidad.
+        </p>
+      </a>
+
+      <a class="module-card"
+         routerLink="/tracking">
+        <span class="module-icon">04</span>
+        <h2>Seguimiento</h2>
+        <p>
+          Preparado para GPS y Google Maps.
+        </p>
+      </a>
+
+      <a class="module-card"
+         routerLink="/users">
+        <span class="module-icon">05</span>
+        <h2>Usuarios y roles</h2>
+        <p>
+          Administración de accesos persistentes en SQL Server.
+        </p>
+      </a>
+      <a class="module-card"
+         routerLink="/loads">
+        <span class="module-icon">06</span>
+        <h2>Cargas</h2>
+        <p>
+          Asigna pedidos manualmente a vehículos y ordena las paradas.
+        </p>
+      </a>
+    </section>
+  </main>
+</div>
