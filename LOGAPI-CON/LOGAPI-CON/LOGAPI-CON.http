@@ -1,0 +1,5 @@
+@LOGAPI_CON_HostAddress = http://localhost:5174
+
+GET {{LOGAPI_CON_HostAddress}}
+Accept: application/json
+
